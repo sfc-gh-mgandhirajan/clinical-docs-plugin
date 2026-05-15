@@ -1,0 +1,82 @@
+{
+  "mode": "strict",
+  "agents_md": "AGENTS.md",
+
+  "infrastructure_scripts": [
+    {
+      "step": 1,
+      "file": "skills/clinical-document-extraction/scripts/dynamic_pipeline_setup.sql",
+      "description": "Create pipeline tables, UDFs, stream, and refresh task"
+    },
+    {
+      "step": 2,
+      "file": "skills/clinical-document-extraction/scripts/pipeline_orchestration.sql",
+      "description": "Create directory stream and 5-task DAG for automated pipeline orchestration",
+      "conditional": "orchestration_mode != 'manual'"
+    }
+  ],
+
+  "stored_procedures": [
+    {
+      "file": "skills/clinical-document-extraction/scripts/proc_preprocess_clinical_docs.sql",
+      "creates": "PREPROCESS_CLINICAL_DOCS",
+      "required_before": "classify"
+    },
+    {
+      "file": "skills/clinical-document-extraction/scripts/proc_classify_metadata.sql",
+      "creates": "EXTRACT_DOCUMENT_CLASSIFICATION_METADATA",
+      "required_before": "classify"
+    },
+    {
+      "file": "skills/clinical-document-extraction/scripts/proc_classify_aggregated.sql",
+      "creates": "EXTRACT_DOC_CLASSIFICATION",
+      "required_before": "extract"
+    },
+    {
+      "file": "skills/clinical-document-extraction/scripts/proc_extract_type_specific.sql",
+      "creates": "EXTRACT_DOCUMENT_TYPE_SPECIFIC_VALUES",
+      "required_before": "extract"
+    },
+    {
+      "file": "skills/clinical-document-extraction/scripts/proc_extract_with_ai_agg.sql",
+      "creates": "EXTRACT_WITH_AI_AGG",
+      "required_before": "parse"
+    },
+    {
+      "file": "skills/clinical-document-extraction/scripts/proc_parse_with_images.sql",
+      "creates": "PARSE_WITH_IMAGES_V2",
+      "required_before": "parse"
+    }
+  ],
+
+  "pipeline_order": [
+    "PREPROCESS_CLINICAL_DOCS",
+    "EXTRACT_DOCUMENT_CLASSIFICATION_METADATA",
+    "EXTRACT_DOC_CLASSIFICATION",
+    "EXTRACT_DOCUMENT_TYPE_SPECIFIC_VALUES",
+    "PARSE_WITH_IMAGES_V2"
+  ],
+
+  "config_driven_objects": {
+    "config_table": "CLINICAL_DOCS_EXTRACTION_CONFIG",
+    "spec_source": "config/document_type_specs.yaml",
+    "classification_udf": "BUILD_DOCUMENT_CLASSIFICATION_EXTRACTION_JSON()",
+    "extraction_udf": "BUILD_DOC_TYPE_EXTRACTION_JSON(doc_type)"
+  },
+
+  "prohibited_patterns": [
+    "SNOWFLAKE.CORTEX.COMPLETE for document classification (use EXTRACT_DOCUMENT_CLASSIFICATION_METADATA proc)",
+    "SNOWFLAKE.CORTEX.COMPLETE for field extraction (use EXTRACT_DOCUMENT_TYPE_SPECIFIC_VALUES proc)",
+    "Ad-hoc CREATE TABLE for pipeline tables (use dynamic_pipeline_setup.sql)",
+    "Hardcoded field lists in extraction prompts (use config table + BUILD_DOC_TYPE_EXTRACTION_JSON)",
+    "LATERAL FLATTEN + COMPLETE for extraction (use AI_EXTRACT via stored procedure)",
+    "snow CLI commands (use snowflake_sql_execute tool)",
+    "Skipping quality gates (MUST test one document before batch)"
+  ],
+
+  "quality_gates": {
+    "E8": "Test ONE document classification before batch",
+    "E10": "Test ONE document extraction per type before batch",
+    "E11": "Pipeline complete — present next-step options"
+  }
+}

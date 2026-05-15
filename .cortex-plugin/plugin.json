@@ -1,0 +1,38 @@
+{
+  "name": "clinical-document-intelligence",
+  "version": "1.0.0",
+  "description": "End-to-end clinical document intelligence on Snowflake. Extract structured data from clinical PDFs (discharge summaries, pathology reports, radiology reports), search across documents with semantic + keyword search, query via natural language Cortex Agent, and visualize in Streamlit — all with HIPAA governance baked in.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/enforce-contract.sh"
+          }
+        ],
+        "matcher": "snowflake_sql_execute|Bash"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/phi-output-guard.sh"
+          }
+        ],
+        "matcher": "Write|Read"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/audit-trail.sh"
+          }
+        ],
+        "matcher": "snowflake_sql_execute"
+      }
+    ]
+  }
+}
