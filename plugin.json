@@ -1,0 +1,190 @@
+{
+  "name": "clinical-document-intelligence",
+  "version": "1.0.0",
+  "description": "End-to-end clinical document intelligence on Snowflake. Extract structured data from clinical PDFs (discharge summaries, pathology reports, radiology reports), search across documents with semantic + keyword search, query via natural language Cortex Agent, and visualize in Streamlit — all with HIPAA governance baked in.",
+  "author": "Snowflake Health Sciences",
+  "license": "Proprietary",
+
+  "metadata": {
+    "industry": "healthcare",
+    "sub_industry": "provider",
+    "business_function": "clinical-data-management",
+    "snowflake_features": "cortex-ai,cortex-search,cortex-agent,dynamic-tables,streamlit,governance",
+    "hipaa_compliant": "true"
+  },
+
+  "keywords": [
+    "clinical documents", "discharge summary", "pathology report", "radiology report",
+    "AI_PARSE_DOCUMENT", "PDF extraction", "Cortex Search", "Cortex Agent",
+    "HIPAA", "PHI masking", "healthcare", "NLP"
+  ],
+
+  "composed_skills": {
+    "router": "skills/SKILL.md",
+    "sub_skills": [
+      "skills/clinical-document-extraction/SKILL.md",
+      "skills/clinical-docs-search/SKILL.md",
+      "skills/clinical-docs-agent/SKILL.md",
+      "skills/clinical-docs-viewer/SKILL.md",
+      "skills/data-model-knowledge/SKILL.md"
+    ],
+    "platform_skills": [
+      "data-governance",
+      "cortex-ai-functions",
+      "search-optimization",
+      "developing-with-streamlit",
+      "cortex-agent"
+    ]
+  },
+
+  "execution_contract": {
+    "mode": "strict",
+    "agents_md": "AGENTS.md",
+
+    "infrastructure_scripts": [
+      {
+        "step": 1,
+        "file": "skills/clinical-document-extraction/scripts/dynamic_pipeline_setup.sql",
+        "description": "Create pipeline tables, UDFs, stream, and refresh task"
+      },
+      {
+        "step": 2,
+        "file": "skills/clinical-document-extraction/scripts/pipeline_orchestration.sql",
+        "description": "Create directory stream and 5-task DAG for automated pipeline orchestration",
+        "conditional": "orchestration_mode != 'manual'"
+      }
+    ],
+
+    "stored_procedures": [
+      {
+        "file": "skills/clinical-document-extraction/scripts/proc_preprocess_clinical_docs.sql",
+        "creates": "PREPROCESS_CLINICAL_DOCS",
+        "required_before": "classify"
+      },
+      {
+        "file": "skills/clinical-document-extraction/scripts/proc_classify_metadata.sql",
+        "creates": "EXTRACT_DOCUMENT_CLASSIFICATION_METADATA",
+        "required_before": "classify"
+      },
+      {
+        "file": "skills/clinical-document-extraction/scripts/proc_classify_aggregated.sql",
+        "creates": "EXTRACT_DOC_CLASSIFICATION",
+        "required_before": "extract"
+      },
+      {
+        "file": "skills/clinical-document-extraction/scripts/proc_extract_type_specific.sql",
+        "creates": "EXTRACT_DOCUMENT_TYPE_SPECIFIC_VALUES",
+        "required_before": "extract"
+      },
+      {
+        "file": "skills/clinical-document-extraction/scripts/proc_extract_with_ai_agg.sql",
+        "creates": "EXTRACT_WITH_AI_AGG",
+        "required_before": "parse"
+      },
+      {
+        "file": "skills/clinical-document-extraction/scripts/proc_parse_with_images.sql",
+        "creates": "PARSE_WITH_IMAGES_V2",
+        "required_before": "parse"
+      }
+    ],
+
+    "pipeline_order": [
+      "PREPROCESS_CLINICAL_DOCS",
+      "EXTRACT_DOCUMENT_CLASSIFICATION_METADATA",
+      "EXTRACT_DOC_CLASSIFICATION",
+      "EXTRACT_DOCUMENT_TYPE_SPECIFIC_VALUES",
+      "PARSE_WITH_IMAGES_V2"
+    ],
+
+    "config_driven_objects": {
+      "config_table": "CLINICAL_DOCS_EXTRACTION_CONFIG",
+      "spec_source": "config/document_type_specs.yaml",
+      "classification_udf": "BUILD_DOCUMENT_CLASSIFICATION_EXTRACTION_JSON()",
+      "extraction_udf": "BUILD_DOC_TYPE_EXTRACTION_JSON(doc_type)"
+    },
+
+    "cortex_ai_patterns": {
+      "classification": {
+        "method": "two-step",
+        "step_1": "AI_PARSE_DOCUMENT",
+        "step_2": "AI_COMPLETE with structured prompt from config table",
+        "prohibited": "Direct CORTEX.COMPLETE for classification without AI_PARSE_DOCUMENT"
+      },
+      "extraction": {
+        "method": "AI_EXTRACT",
+        "response_format": "Built dynamically by BUILD_DOC_TYPE_EXTRACTION_JSON UDF from config",
+        "prohibited": "CORTEX.COMPLETE for field extraction, hardcoded LATERAL FLATTEN"
+      },
+      "parsing": {
+        "method": "AI_PARSE_DOCUMENT",
+        "mode": "OCR + layout preservation",
+        "prohibited": "Direct file reads without AI_PARSE_DOCUMENT preprocessing"
+      }
+    },
+
+    "prohibited_patterns": [
+      "SNOWFLAKE.CORTEX.COMPLETE for document classification (use EXTRACT_DOCUMENT_CLASSIFICATION_METADATA proc)",
+      "SNOWFLAKE.CORTEX.COMPLETE for field extraction (use EXTRACT_DOCUMENT_TYPE_SPECIFIC_VALUES proc)",
+      "Ad-hoc CREATE TABLE for pipeline tables (use dynamic_pipeline_setup.sql)",
+      "Hardcoded field lists in extraction prompts (use config table + BUILD_DOC_TYPE_EXTRACTION_JSON)",
+      "LATERAL FLATTEN + COMPLETE for extraction (use AI_EXTRACT via stored procedure)",
+      "snow CLI commands (use snowflake_sql_execute tool)",
+      "Skipping quality gates (MUST test one document before batch)"
+    ],
+
+    "quality_gates": {
+      "E8": "Test ONE document classification before batch — present result to user for approval",
+      "E10": "Test ONE document extraction per type before batch — present fields to user for review",
+      "E11": "Pipeline complete — present options (search, agent, viewer, governance) for next steps"
+    }
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "snowflake_sql_execute|Bash",
+        "command": "hooks/enforce-contract.sh",
+        "description": "Blocks prohibited SQL patterns (CORTEX.COMPLETE misuse, ad-hoc DDL, snow CLI)"
+      },
+      {
+        "matcher": "Write|Read",
+        "command": "hooks/phi-output-guard.sh",
+        "description": "Blocks PHI patterns (SSN, MRN, DOB) in tool outputs"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "snowflake_sql_execute",
+        "command": "hooks/audit-trail.sh",
+        "description": "Logs all DML on PHI tables to audit file"
+      }
+    ]
+  },
+
+  "commands": {
+    "clinical-docs:deploy": "commands/deploy.md",
+    "clinical-docs:status": "commands/clinical-docs-status.md",
+    "clinical-docs:extract": "commands/clinical-docs-extract.md",
+    "clinical-docs:search": "commands/clinical-docs-search.md"
+  },
+
+  "install": {
+    "preflight": "setup/preflight.py",
+    "provision": "setup/provision_infrastructure.sql",
+    "sample_data": "setup/load_sample_data.py",
+    "teardown": "setup/teardown.sql"
+  },
+
+  "dependencies": {
+    "snowflake_features": [
+      "CORTEX_AI",
+      "CORTEX_SEARCH",
+      "CORTEX_AGENT",
+      "DYNAMIC_TABLES"
+    ],
+    "warehouse_size": "MEDIUM",
+    "marketplace_listings": {
+      "optional": ["PUBMED_ABSTRACTS_EMBEDDINGS"]
+    }
+  }
+}

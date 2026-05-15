@@ -1,0 +1,40 @@
+DISCHARGE SUMMARY
+
+Patient: Jane Doe (SYNTHETIC - NOT A REAL PATIENT)
+MRN: SYN-2024-001
+DOB: 01/15/1955
+Admission Date: 03/10/2024
+Discharge Date: 03/15/2024
+Attending Physician: Dr. Smith (Synthetic)
+
+CHIEF COMPLAINT: Shortness of breath, chest pain
+
+HISTORY OF PRESENT ILLNESS:
+71-year-old female presented with progressive dyspnea and substernal chest pain 
+for 3 days. Patient has history of CHF (EF 35%), CAD s/p CABG 2019, and Type 2 
+diabetes mellitus.
+
+HOSPITAL COURSE:
+Patient was admitted to telemetry. BNP elevated at 1,847. Chest X-ray showed 
+bilateral pleural effusions. Started on IV furosemide with good diuresis. 
+Echocardiogram showed EF 30% (decreased from 35% baseline).
+Cardiology consulted - recommended uptitration of heart failure medications.
+
+DIAGNOSES:
+1. Acute decompensated heart failure (ICD-10: I50.21)
+2. Coronary artery disease (ICD-10: I25.10)
+3. Type 2 diabetes mellitus (ICD-10: E11.9)
+4. Bilateral pleural effusions (ICD-10: J91.8)
+
+MEDICATIONS AT DISCHARGE:
+1. Furosemide 40mg PO BID
+2. Lisinopril 10mg PO daily
+3. Carvedilol 12.5mg PO BID
+4. Metformin 1000mg PO BID
+5. Aspirin 81mg PO daily
+6. Atorvastatin 40mg PO daily
+
+FOLLOW-UP:
+- Cardiology clinic in 1 week
+- PCP follow-up in 2 weeks
+- Daily weights, fluid restriction 1.5L/day

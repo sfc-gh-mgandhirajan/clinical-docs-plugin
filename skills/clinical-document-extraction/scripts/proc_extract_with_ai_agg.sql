@@ -1,0 +1,96 @@
+-- =============================================================================
+-- EXTRACT_DOCUMENT_TYPE_SPECIFIC_VALUES_WITH_AI_AGG
+-- Extracts fields from split (multi-chunk) documents using AI_AGG.
+-- Replace {db} and {schema} with actual values before execution.
+-- =============================================================================
+CREATE OR REPLACE PROCEDURE {db}.{schema}.EXTRACT_DOCUMENT_TYPE_SPECIFIC_VALUES_WITH_AI_AGG(
+    PARENT_DOCUMENT_FILTER VARCHAR DEFAULT null
+)
+RETURNS VARCHAR
+LANGUAGE SQL
+EXECUTE AS OWNER
+AS
+$$
+DECLARE
+    total_rows_inserted NUMBER DEFAULT 0;
+    batch_rows_inserted NUMBER DEFAULT 0;
+    current_classification VARCHAR;
+    extraction_prompt VARCHAR;
+    classifications_cursor CURSOR FOR SELECT DISTINCT DOCUMENT_CLASSIFICATION FROM TEMP_CLASSIFICATIONS_TO_PROCESS;
+BEGIN
+    CREATE OR REPLACE TEMPORARY TABLE TEMP_ALL_PARENTS_TO_PROCESS AS
+    SELECT dcm.DOCUMENT_RELATIVE_PATH AS PARENT_DOCUMENT_RELATIVE_PATH,
+           dcm.DOCUMENT_STAGE AS PARENT_DOCUMENT_STAGE,
+           dcm.FIELD_VALUE AS DOCUMENT_CLASSIFICATION
+    FROM {db}.{schema}.DOC_CLASSIFICATION_METADATA_ROWS dcm
+    WHERE dcm.DOC_CATEGORY = 'MULTIPLE' AND dcm.FIELD_NAME = 'DOCUMENT_CLASSIFICATION'
+      AND (:PARENT_DOCUMENT_FILTER IS NULL OR dcm.DOCUMENT_RELATIVE_PATH = :PARENT_DOCUMENT_FILTER)
+      AND EXISTS (SELECT 1 FROM {db}.{schema}.DOC_TYPE_SPECIFIC_EXTRACTION_CONFIG config
+                  WHERE config.DOCUMENT_CLASSIFICATION ILIKE dcm.FIELD_VALUE AND config.IS_ACTIVE = TRUE)
+      AND NOT EXISTS (SELECT 1 FROM {db}.{schema}.DOC_TYPE_SPECIFIC_VALUES_EXTRACT_OUTPUT output
+                      WHERE output.DOCUMENT_RELATIVE_PATH = dcm.DOCUMENT_RELATIVE_PATH
+                        AND output.DOCUMENT_CLASSIFICATION ILIKE dcm.FIELD_VALUE);
+
+    CREATE OR REPLACE TEMPORARY TABLE TEMP_CLASSIFICATIONS_TO_PROCESS AS
+    SELECT DISTINCT DOCUMENT_CLASSIFICATION FROM TEMP_ALL_PARENTS_TO_PROCESS;
+
+    FOR classification_record IN classifications_cursor DO
+        current_classification := classification_record.DOCUMENT_CLASSIFICATION;
+
+        SELECT 'Extract the following fields from the document text and return ONLY a JSON object with this exact structure: {"response": {'
+               || LISTAGG('"' || FIELD_NAME || '"' || ': "value"', ', ') WITHIN GROUP (ORDER BY FIELD_NAME)
+               || '}}. Fields to extract: ' || LISTAGG(FIELD_NAME, ', ') WITHIN GROUP (ORDER BY FIELD_NAME)
+               || '. If a field is not found, set its value to null.'
+        INTO :extraction_prompt
+        FROM {db}.{schema}.DOC_TYPE_SPECIFIC_EXTRACTION_CONFIG
+        WHERE DOCUMENT_CLASSIFICATION ILIKE :current_classification AND IS_ACTIVE = TRUE
+        GROUP BY DOCUMENT_CLASSIFICATION;
+
+        CREATE OR REPLACE TEMPORARY TABLE TEMP_PARENTS_CURRENT_CLASS AS
+        SELECT PARENT_DOCUMENT_RELATIVE_PATH, PARENT_DOCUMENT_STAGE, DOCUMENT_CLASSIFICATION
+        FROM TEMP_ALL_PARENTS_TO_PROCESS WHERE DOCUMENT_CLASSIFICATION ILIKE :current_classification;
+
+        CREATE OR REPLACE TEMPORARY TABLE TEMP_EXTRACTED_VALUES_CURRENT AS
+        SELECT ptp.PARENT_DOCUMENT_RELATIVE_PATH, ptp.PARENT_DOCUMENT_STAGE, ptp.DOCUMENT_CLASSIFICATION,
+               PARSE_JSON(AI_AGG(dpo.PAGE_CONTENT, :extraction_prompt)) AS ai_agg_response
+        FROM {db}.{schema}.DOCS_PARSE_OUTPUT dpo
+        INNER JOIN TEMP_PARENTS_CURRENT_CLASS ptp ON dpo.PARENT_DOCUMENT_RELATIVE_PATH = ptp.PARENT_DOCUMENT_RELATIVE_PATH
+        GROUP BY ptp.PARENT_DOCUMENT_RELATIVE_PATH, ptp.PARENT_DOCUMENT_STAGE, ptp.DOCUMENT_CLASSIFICATION;
+
+        INSERT INTO {db}.{schema}.DOC_TYPE_SPECIFIC_VALUES_EXTRACT_OUTPUT (
+            DOCUMENT_RELATIVE_PATH, DOCUMENT_STAGE, DOCUMENT_CLASSIFICATION, FIELD_NAME, FIELD_VALUE, EXTRACTION_TIMESTAMP
+        )
+        SELECT temp.PARENT_DOCUMENT_RELATIVE_PATH, temp.PARENT_DOCUMENT_STAGE, temp.DOCUMENT_CLASSIFICATION,
+               config.FIELD_NAME, GET_PATH(temp.ai_agg_response, 'response.' || config.FIELD_NAME)::VARCHAR, CURRENT_TIMESTAMP()
+        FROM TEMP_EXTRACTED_VALUES_CURRENT temp
+        INNER JOIN {db}.{schema}.DOC_TYPE_SPECIFIC_EXTRACTION_CONFIG config
+            ON config.DOCUMENT_CLASSIFICATION ILIKE temp.DOCUMENT_CLASSIFICATION AND config.IS_ACTIVE = TRUE;
+
+        batch_rows_inserted := SQLROWCOUNT;
+        total_rows_inserted := total_rows_inserted + batch_rows_inserted;
+        DROP TABLE IF EXISTS TEMP_PARENTS_CURRENT_CLASS;
+        DROP TABLE IF EXISTS TEMP_EXTRACTED_VALUES_CURRENT;
+    END FOR;
+
+    DROP TABLE IF EXISTS TEMP_ALL_PARENTS_TO_PROCESS;
+    DROP TABLE IF EXISTS TEMP_CLASSIFICATIONS_TO_PROCESS;
+
+    LET skipped_count NUMBER DEFAULT 0;
+    SELECT COUNT(DISTINCT dcm.DOCUMENT_RELATIVE_PATH) INTO :skipped_count
+    FROM {db}.{schema}.DOC_CLASSIFICATION_METADATA_ROWS dcm
+    WHERE dcm.DOC_CATEGORY = 'MULTIPLE' AND dcm.FIELD_NAME = 'DOCUMENT_CLASSIFICATION'
+      AND NOT EXISTS (
+          SELECT 1 FROM {db}.{schema}.DOC_TYPE_SPECIFIC_EXTRACTION_CONFIG config
+          WHERE config.DOCUMENT_CLASSIFICATION ILIKE dcm.FIELD_VALUE AND config.IS_ACTIVE = TRUE
+      )
+      AND NOT EXISTS (
+          SELECT 1 FROM {db}.{schema}.DOC_TYPE_SPECIFIC_VALUES_EXTRACT_OUTPUT output
+          WHERE output.DOCUMENT_RELATIVE_PATH = dcm.DOCUMENT_RELATIVE_PATH
+      );
+
+    RETURN 'Successfully extracted and inserted ' || total_rows_inserted || ' field value(s) using AI_AGG' ||
+        CASE WHEN :skipped_count > 0
+        THEN '. WARNING: ' || :skipped_count || ' document(s) skipped — no extraction config for their classification type.'
+        ELSE '' END;
+END;
+$$;

@@ -1,0 +1,35 @@
+SURGICAL PATHOLOGY REPORT
+
+Patient: Maria Garcia (SYNTHETIC - NOT A REAL PATIENT)
+MRN: SYN-2024-003
+DOB: 05/30/1972
+Collection Date: 04/12/2024
+Report Date: 04/15/2024
+
+SPECIMEN: Right breast, excisional biopsy
+
+CLINICAL HISTORY: 52-year-old female with palpable right breast mass identified 
+on screening mammography. BI-RADS 5.
+
+GROSS DESCRIPTION:
+Received fresh, a 4.2 x 3.1 x 2.8 cm tan-white firm mass with irregular margins.
+
+MICROSCOPIC DESCRIPTION:
+Sections show invasive ductal carcinoma, grade 2 (Nottingham score 6/9: 
+tubule formation 2, nuclear pleomorphism 2, mitotic count 2). Tumor measures 
+2.8cm in greatest dimension. No lymphovascular invasion identified. 
+Surgical margins negative (closest margin 3mm, medial).
+
+IMMUNOHISTOCHEMISTRY:
+- ER: Positive (95%, strong)
+- PR: Positive (80%, moderate)  
+- HER2: Negative (IHC 1+)
+- Ki-67: 15%
+
+DIAGNOSIS:
+Invasive ductal carcinoma, grade 2, ER+/PR+/HER2-
+Tumor size: 2.8 cm (pT2)
+Margins: Negative
+Lymphovascular invasion: Not identified
+
+Pathologist: Dr. Williams (Synthetic), MD

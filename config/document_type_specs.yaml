@@ -1,0 +1,287 @@
+# =============================================================================
+# Clinical Document Type Specifications
+# =============================================================================
+# This file is the AUTHORITATIVE source of truth for document type definitions.
+# The CLINICAL_DOCS_EXTRACTION_CONFIG table is DERIVED from these specs — not
+# the other way around.
+#
+# Pattern: Specs (this file) → Config Table → GENERATE_DYNAMIC_OBJECTS()
+#          ^^^^^^^^^^^^^^^^^^^^
+#          CKE-discoverable layer (can be loaded into Cortex Search)
+#
+# To add a new document type:
+#   1. Add a new entry below following the existing pattern
+#   2. Run the config seeder (or INSERT manually from this spec)
+#   3. CALL GENERATE_DYNAMIC_OBJECTS()
+#
+# To modify extraction fields:
+#   1. Edit the fields list for the target doc type below
+#   2. Re-seed the config table from this spec
+#   3. CALL GENERATE_DYNAMIC_OBJECTS()
+#
+# This file can also be loaded into a Cortex Search Service for dynamic
+# discovery — skills query "what fields does a discharge summary have?"
+# and get answers from the spec rather than hardcoded definitions.
+# =============================================================================
+
+version: "1.0"
+schema_version: "2026-03-19"
+
+defaults:
+  config_type: EXTRACTION
+  data_type: "VARCHAR(500)"
+  identity_fields:
+    mrn:
+      field_name: MRN
+      extraction_question: "What is the Medical Record Number (MRN)?"
+      data_type: "VARCHAR(100)"
+      is_identity_field: MRN
+    patient_name:
+      field_name: PATIENT_NAME
+      extraction_question: "What is the patient's full name?"
+      data_type: "VARCHAR(200)"
+      is_identity_field: PATIENT_NAME
+
+document_types:
+
+  - type: DISCHARGE SUMMARY
+    classification_value: DISCHARGE SUMMARY
+    view_name: DISCHARGE_SUMMARY_V
+    description: >-
+      Hospital discharge summaries containing admission/discharge dates,
+      diagnoses, disposition, and follow-up instructions.
+    fields:
+      - field_name: MRN
+        extraction_question: "What is the Medical Record Number (MRN)?"
+        target_column: MRN
+        data_type: "VARCHAR(100)"
+        display_order: 1
+        is_identity_field: MRN
+        contains_phi: true
+      - field_name: PATIENT_NAME
+        extraction_question: "What is the patient's full name?"
+        target_column: PATIENT_NAME
+        data_type: "VARCHAR(200)"
+        display_order: 2
+        is_identity_field: PATIENT_NAME
+        contains_phi: true
+      - field_name: ADMISSION_DATE
+        extraction_question: "What is the admission date?"
+        target_column: ADMISSION_DATE
+        data_type: "VARCHAR(100)"
+        display_order: 3
+        contains_phi: false
+      - field_name: DISCHARGE_DATE
+        extraction_question: "What is the discharge date?"
+        target_column: DISCHARGE_DATE
+        data_type: "VARCHAR(100)"
+        display_order: 4
+        contains_phi: false
+      - field_name: DISCHARGE_DIAGNOSIS
+        extraction_question: "What is the primary discharge diagnosis?"
+        target_column: DISCHARGE_DIAGNOSIS
+        data_type: "VARCHAR(500)"
+        display_order: 5
+        contains_phi: false
+      - field_name: DISCHARGE_DISPOSITION
+        extraction_question: "What is the discharge disposition (e.g., home, rehab, skilled nursing)?"
+        target_column: DISCHARGE_DISPOSITION
+        data_type: "VARCHAR(200)"
+        display_order: 6
+        contains_phi: false
+
+  - type: PATHOLOGY REPORT
+    classification_value: PATHOLOGY REPORT
+    view_name: PATHOLOGY_REPORTS_V
+    description: >-
+      Surgical and clinical pathology reports with specimen details,
+      diagnoses, and tumor characteristics.
+    fields:
+      - field_name: MRN
+        extraction_question: "What is the Medical Record Number (MRN)?"
+        target_column: MRN
+        data_type: "VARCHAR(100)"
+        display_order: 1
+        is_identity_field: MRN
+        contains_phi: true
+      - field_name: PATIENT_NAME
+        extraction_question: "What is the patient's full name?"
+        target_column: PATIENT_NAME
+        data_type: "VARCHAR(200)"
+        display_order: 2
+        is_identity_field: PATIENT_NAME
+        contains_phi: true
+      - field_name: COLLECTION_DATE
+        extraction_question: "What is the specimen collection date?"
+        target_column: COLLECTION_DATE
+        data_type: "VARCHAR(100)"
+        display_order: 3
+        contains_phi: false
+      - field_name: SPECIMEN_TYPE
+        extraction_question: "What type of specimen was collected?"
+        target_column: SPECIMEN_TYPE
+        data_type: "VARCHAR(200)"
+        display_order: 4
+        contains_phi: false
+      - field_name: PATHOLOGICAL_DIAGNOSIS
+        extraction_question: "What is the pathological diagnosis?"
+        target_column: PATHOLOGICAL_DIAGNOSIS
+        data_type: "VARCHAR(500)"
+        display_order: 5
+        contains_phi: false
+      - field_name: TUMOR_SIZE
+        extraction_question: "What is the tumor size (if applicable)?"
+        target_column: TUMOR_SIZE
+        data_type: "VARCHAR(200)"
+        display_order: 6
+        contains_phi: false
+
+  - type: RADIOLOGY REPORT
+    classification_value: RADIOLOGY REPORT
+    view_name: RADIOLOGY_REPORTS_V
+    description: >-
+      Diagnostic imaging reports with modality, body part, findings,
+      and radiologist impression.
+    fields:
+      - field_name: MRN
+        extraction_question: "What is the Medical Record Number (MRN)?"
+        target_column: MRN
+        data_type: "VARCHAR(100)"
+        display_order: 1
+        is_identity_field: MRN
+        contains_phi: true
+      - field_name: PATIENT_NAME
+        extraction_question: "What is the patient's full name?"
+        target_column: PATIENT_NAME
+        data_type: "VARCHAR(200)"
+        display_order: 2
+        is_identity_field: PATIENT_NAME
+        contains_phi: true
+      - field_name: EXAM_DATE
+        extraction_question: "What is the exam or study date?"
+        target_column: EXAM_DATE
+        data_type: "VARCHAR(100)"
+        display_order: 3
+        contains_phi: false
+      - field_name: IMAGING_MODALITY
+        extraction_question: "What imaging modality was used (e.g., CT, MRI, X-ray, Ultrasound)?"
+        target_column: IMAGING_MODALITY
+        data_type: "VARCHAR(100)"
+        display_order: 4
+        contains_phi: false
+      - field_name: BODY_PART_EXAMINED
+        extraction_question: "What body part or region was examined?"
+        target_column: BODY_PART_EXAMINED
+        data_type: "VARCHAR(200)"
+        display_order: 5
+        contains_phi: false
+      - field_name: FINDINGS
+        extraction_question: "What are the key findings from the imaging study?"
+        target_column: FINDINGS
+        data_type: "VARCHAR(2000)"
+        display_order: 6
+        contains_phi: false
+      - field_name: IMPRESSION
+        extraction_question: "What is the radiologist's impression or conclusion?"
+        target_column: IMPRESSION
+        data_type: "VARCHAR(2000)"
+        display_order: 7
+        contains_phi: false
+
+# =============================================================================
+# Candidate Types (uncomment and customize when ready)
+# =============================================================================
+#
+#   - type: OPERATIVE NOTE
+#     classification_value: OPERATIVE NOTE
+#     view_name: OPERATIVE_NOTES_V
+#     description: "Surgical operative notes with procedure details."
+#     fields:
+#       - field_name: MRN
+#         extraction_question: "What is the Medical Record Number (MRN)?"
+#         target_column: MRN
+#         data_type: "VARCHAR(100)"
+#         display_order: 1
+#         is_identity_field: MRN
+#         contains_phi: true
+#       - field_name: PATIENT_NAME
+#         extraction_question: "What is the patient's full name?"
+#         target_column: PATIENT_NAME
+#         data_type: "VARCHAR(200)"
+#         display_order: 2
+#         is_identity_field: PATIENT_NAME
+#         contains_phi: true
+#       - field_name: SURGERY_DATE
+#         extraction_question: "When was the surgery performed?"
+#         target_column: SURGERY_DATE
+#         data_type: "VARCHAR(100)"
+#         display_order: 3
+#         contains_phi: false
+#       - field_name: PROCEDURE_NAME
+#         extraction_question: "What procedure was performed?"
+#         target_column: PROCEDURE_NAME
+#         data_type: "VARCHAR(500)"
+#         display_order: 4
+#         contains_phi: false
+#       - field_name: SURGEON_NAME
+#         extraction_question: "Who was the primary surgeon?"
+#         target_column: SURGEON_NAME
+#         data_type: "VARCHAR(200)"
+#         display_order: 5
+#         contains_phi: false
+#       - field_name: ANESTHESIA_TYPE
+#         extraction_question: "What type of anesthesia was used?"
+#         target_column: ANESTHESIA_TYPE
+#         data_type: "VARCHAR(200)"
+#         display_order: 6
+#         contains_phi: false
+#
+#   - type: LAB REPORT
+#     classification_value: LAB REPORT
+#     view_name: LAB_REPORTS_V
+#     description: "Clinical laboratory test results."
+#     fields:
+#       - field_name: MRN
+#         extraction_question: "What is the Medical Record Number (MRN)?"
+#         target_column: MRN
+#         data_type: "VARCHAR(100)"
+#         display_order: 1
+#         is_identity_field: MRN
+#         contains_phi: true
+#       - field_name: PATIENT_NAME
+#         extraction_question: "What is the patient's full name?"
+#         target_column: PATIENT_NAME
+#         data_type: "VARCHAR(200)"
+#         display_order: 2
+#         is_identity_field: PATIENT_NAME
+#         contains_phi: true
+#       - field_name: COLLECTION_DATE
+#         extraction_question: "What is the specimen collection date?"
+#         target_column: COLLECTION_DATE
+#         data_type: "VARCHAR(100)"
+#         display_order: 3
+#         contains_phi: false
+#       - field_name: TEST_NAME
+#         extraction_question: "What test was performed?"
+#         target_column: TEST_NAME
+#         data_type: "VARCHAR(500)"
+#         display_order: 4
+#         contains_phi: false
+#       - field_name: RESULT_VALUE
+#         extraction_question: "What is the test result value?"
+#         target_column: RESULT_VALUE
+#         data_type: "VARCHAR(500)"
+#         display_order: 5
+#         contains_phi: false
+#       - field_name: REFERENCE_RANGE
+#         extraction_question: "What is the normal reference range?"
+#         target_column: REFERENCE_RANGE
+#         data_type: "VARCHAR(200)"
+#         display_order: 6
+#         contains_phi: false
+#       - field_name: ABNORMAL_FLAG
+#         extraction_question: "Is the result flagged as abnormal?"
+#         target_column: ABNORMAL_FLAG
+#         data_type: "VARCHAR(50)"
+#         display_order: 7
+#         contains_phi: false

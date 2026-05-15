@@ -1,0 +1,25 @@
+RADIOLOGY REPORT
+
+Patient: John Smith (SYNTHETIC - NOT A REAL PATIENT)
+MRN: SYN-2024-002
+DOB: 08/22/1968
+Exam Date: 04/05/2024
+Exam: CT Chest with contrast
+
+CLINICAL INDICATION: Persistent cough, weight loss. Rule out malignancy.
+
+TECHNIQUE: CT chest with IV contrast, 1.25mm axial images reconstructed.
+
+FINDINGS:
+Lungs: 2.3cm spiculated nodule in the right upper lobe (series 4, image 67). 
+No other pulmonary nodules identified. No pleural effusion.
+Mediastinum: No significant lymphadenopathy. Heart size normal.
+Bones: No lytic or blastic lesions.
+
+IMPRESSION:
+1. 2.3cm spiculated right upper lobe nodule, suspicious for primary lung 
+   malignancy. Recommend PET-CT for further evaluation.
+2. No mediastinal lymphadenopathy.
+3. No pleural effusion.
+
+Reported by: Dr. Johnson (Synthetic), Board Certified Radiologist
