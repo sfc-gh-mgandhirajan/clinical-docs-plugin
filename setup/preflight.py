@@ -102,11 +102,30 @@ def check_dynamic_tables(conn):
         return False
 
 
-def run_preflight(target_db="HCLS_CLINICAL_DOCS", target_wh=None):
+def run_preflight(target_db=None, target_wh=None):
     print("=" * 60)
     print("  Clinical Document Intelligence Plugin - Preflight Check")
     print("=" * 60)
     print()
+
+    results = []
+
+    # 0. Try reading manifest for defaults
+    manifest_db = None
+    try:
+        import pathlib
+        manifest_path = pathlib.Path(__file__).parent.parent / ".deployment" / "manifest.json"
+        if manifest_path.exists():
+            manifest = json.loads(manifest_path.read_text())
+            manifest_db = manifest.get("environment", {}).get("database")
+            if not target_db:
+                target_db = manifest_db
+                results.append(("Manifest", "OK", f"Read from .deployment/manifest.json (db={target_db})"))
+    except Exception:
+        pass
+
+    if not target_db:
+        target_db = "HCLS_CLINICAL_DOCS"
 
     results = []
 
@@ -188,7 +207,7 @@ def print_results(results):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Clinical Docs Plugin Preflight")
-    parser.add_argument("--database", default="HCLS_CLINICAL_DOCS", help="Target database name")
+    parser.add_argument("--database", default=None, help="Target database name (reads from manifest if not set)")
     parser.add_argument("--warehouse", default=None, help="Target warehouse (uses current if not set)")
     args = parser.parse_args()
     success = run_preflight(target_db=args.database, target_wh=args.warehouse)

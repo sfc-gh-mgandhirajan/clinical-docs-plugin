@@ -137,7 +137,20 @@ def create_sample_documents():
     return list(docs.keys())
 
 
-def upload_to_stage(conn, stage_name="CLINICAL_DOCS_STAGE", db="HCLS_CLINICAL_DOCS", schema="CLINICAL_DOCS"):
+def upload_to_stage(conn, stage_name=None, db=None, schema=None):
+    import pathlib
+    manifest_path = pathlib.Path(__file__).parent.parent / ".deployment" / "manifest.json"
+    if manifest_path.exists() and (not db or not schema or not stage_name):
+        manifest = json.loads(manifest_path.read_text())
+        env = manifest.get("environment", {})
+        db = db or env.get("database", "HCLS_CLINICAL_DOCS")
+        schema = schema or env.get("schema", "CLINICAL_DOCS")
+        stage_name = stage_name or env.get("stage", "CLINICAL_DOCS_STAGE")
+    else:
+        db = db or "HCLS_CLINICAL_DOCS"
+        schema = schema or "CLINICAL_DOCS"
+        stage_name = stage_name or "CLINICAL_DOCS_STAGE"
+
     cur = conn.cursor()
     cur.execute(f"USE DATABASE {db}")
     cur.execute(f"USE SCHEMA {schema}")

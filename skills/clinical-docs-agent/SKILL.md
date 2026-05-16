@@ -237,9 +237,9 @@ Use `ask_user_question` to ask: "What should I name the agent? Any custom instru
 **Recommend**: Name `CLINICAL_DOCUMENTS_AGENT` in `{db}.AGENTS` schema.
 
 ```sql
-CREATE SCHEMA IF NOT EXISTS {db}.AGENTS;
+-- Agent is created in the same schema as the pipeline
 
-CREATE OR REPLACE AGENT {db}.AGENTS.CLINICAL_DOCUMENTS_AGENT
+CREATE OR REPLACE AGENT {db}.{schema}.CLINICAL_DOCUMENTS_AGENT
   COMMENT = 'Clinical Documents AI Agent'
   FROM SPECIFICATION
 $$
@@ -296,7 +296,7 @@ Use `ask_user_question` to ask: "Agent created. Shall I run test queries to veri
 
 ```sql
 SELECT SNOWFLAKE.CORTEX.DATA_AGENT_RUN(
-    '{db}.AGENTS.CLINICAL_DOCUMENTS_AGENT',
+    '{db}.{schema}.CLINICAL_DOCUMENTS_AGENT',
     $$
     {
         "messages": [
@@ -320,13 +320,13 @@ Test both tools:
 ```sql
 -- Test Cortex Analyst (structured query)
 SELECT SNOWFLAKE.CORTEX.DATA_AGENT_RUN(
-    '{db}.AGENTS.CLINICAL_DOCUMENTS_AGENT',
+    '{db}.{schema}.CLINICAL_DOCUMENTS_AGENT',
     $$ {"messages": [{"role": "user", "content": [{"type": "text", "text": "What is the MRN and diagnosis for the discharge summary patient?"}]}]} $$
 );
 
 -- Test Cortex Search (content search)
 SELECT SNOWFLAKE.CORTEX.DATA_AGENT_RUN(
-    '{db}.AGENTS.CLINICAL_DOCUMENTS_AGENT',
+    '{db}.{schema}.CLINICAL_DOCUMENTS_AGENT',
     $$ {"messages": [{"role": "user", "content": [{"type": "text", "text": "Search for information about mechanical ventilation in the discharge documents"}]}]} $$
 );
 ```
