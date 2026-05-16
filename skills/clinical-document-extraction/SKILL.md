@@ -43,7 +43,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 - Build config table INSERTs from spec CKE instead of hardcoded values
 - Inform the OTHER onboarding loop (Gate E9) with similar doc type templates
 
-**If search service is unavailable**, fall back to `references/document_type_specs.yaml` on disk.
+**If search service is unavailable**, fall back to `config/document_type_specs.yaml` on disk.
 
 ### Pre-Conditions (Tier 1 Gates — must complete before any pipeline execution)
 
@@ -89,7 +89,7 @@ The classification prompt is built dynamically from `DOCUMENT_CLASSIFICATION_EXT
 
 ### Config-Driven Field Extraction (responseFormat from config table)
 
-The `CLINICAL_DOCS_EXTRACTION_CONFIG` table is the runtime config, derived from the authoritative spec layer at `references/document_type_specs.yaml`. Type-specific field extraction still uses `AI_EXTRACT`:
+The `CLINICAL_DOCS_EXTRACTION_CONFIG` table is the runtime config, derived from the authoritative spec layer at `config/document_type_specs.yaml`. Type-specific field extraction still uses `AI_EXTRACT`:
 
 ```sql
 AI_EXTRACT(
@@ -157,7 +157,7 @@ Split large DDL batches into 3-4 statements maximum.
 | Extraction workflow | `document-intelligence/references/extraction.md` | Test-before-batch |
 | Parsing workflow | `document-intelligence/references/parsing.md` | Mode selection |
 | Pipeline templates | `document-intelligence/references/pipeline.md` | Stream + Task patterns |
-| Doc type specs | `references/document_type_specs.yaml` | Authoritative field definitions (CKE spec layer) |
+| Doc type specs | `config/document_type_specs.yaml` | Authoritative field definitions (CKE spec layer) |
 | CKE metadata pattern | `references/metadata_as_cke.md` | How specs feed config dynamically |
 
 ## Prerequisites

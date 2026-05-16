@@ -1,7 +1,7 @@
 -- =============================================================================
 -- CLINICAL DOCUMENTS AI-POWERED EXTRACTION - DYNAMIC PIPELINE SETUP
 -- =============================================================================
--- AUTHORITATIVE SOURCE: references/document_type_specs.yaml
+-- AUTHORITATIVE SOURCE: config/document_type_specs.yaml
 --   This YAML spec file defines doc types, extraction fields, prompts, and PHI
 --   flags. The config table (CLINICAL_DOCS_EXTRACTION_CONFIG) is DERIVED from
 --   these specs — not the other way around.
@@ -19,7 +19,7 @@
 --       refreshes Schema CKE corpus, and refreshes Spec CKE corpus.
 --
 -- Adding a new doc type:
---   1. Add entry to references/document_type_specs.yaml (authoritative spec)
+--   1. Add entry to config/document_type_specs.yaml (authoritative spec)
 --   2. Seed config table from spec (INSERT rows or load CSV)
 --   3. CALL GENERATE_DYNAMIC_OBJECTS() — one call does everything
 -- See references/metadata_as_cke.md for the full CKE-driven pattern.
@@ -156,7 +156,7 @@ EXECUTE IMMEDIATE
 -- STEP 2c: SPEC REFERENCE TABLE (doc type specs — for Spec CKE Cortex Search)
 -- Populated by GENERATE_DYNAMIC_OBJECTS() Step 7b from the same config table.
 -- Enables dynamic discovery: "What fields does a discharge summary have?"
--- Source of truth: references/document_type_specs.yaml
+-- Source of truth: config/document_type_specs.yaml
 EXECUTE IMMEDIATE
 'CREATE OR REPLACE TABLE ' || $V_DB || '.' || $V_SCHEMA || '.CLINICAL_DOCS_SPECS_REFERENCE (
     SEARCH_TEXT VARCHAR(4000),
@@ -190,7 +190,7 @@ AS (
 
 -- Spec CKE: skills query "What fields does a discharge summary have?"
 -- Populated by GENERATE_DYNAMIC_OBJECTS() Step 7b from config table.
--- Source of truth: references/document_type_specs.yaml
+-- Source of truth: config/document_type_specs.yaml
 EXECUTE IMMEDIATE
 'CREATE OR REPLACE CORTEX SEARCH SERVICE ' || $V_DB || '.' || $V_SCHEMA || '.CLINICAL_DOCS_SPECS_SEARCH_SVC
     ON search_text
@@ -860,7 +860,7 @@ BEGIN
     --     Populates the Spec CKE table from the same config table.
     --     Enables dynamic discovery: "What fields does a discharge summary have?"
     --     CLINICAL_DOCS_SPECS_SEARCH_SVC auto-refreshes from this table (TARGET_LAG=1d).
-    --     Source of truth: references/document_type_specs.yaml -> config table -> here
+    --     Source of truth: config/document_type_specs.yaml -> config table -> here
     -- =====================================================================
     BEGIN
         LET v_spec_fqn VARCHAR := v_db || '.' || v_schema;
@@ -904,7 +904,7 @@ $$;
 -- END OF DYNAMIC PIPELINE SETUP
 -- =============================================================================
 -- Next steps (spec-first flow):
--- 1. Define doc types in references/document_type_specs.yaml (authoritative spec)
+-- 1. Define doc types in config/document_type_specs.yaml (authoritative spec)
 -- 2. Seed CLINICAL_DOCS_EXTRACTION_CONFIG from specs (INSERT or COPY INTO from CSV)
 -- 3. CALL GENERATE_DYNAMIC_OBJECTS('{db}', '{schema}', '{warehouse}', '{stage}')
 --    Parameterized — pass the user-chosen db/schema/warehouse/stage.

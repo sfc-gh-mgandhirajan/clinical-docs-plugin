@@ -12,7 +12,7 @@
 
 ### Preferred: Edit the Spec File
 
-The authoritative source for doc type definitions is `references/document_type_specs.yaml`. To add a new type:
+The authoritative source for doc type definitions is `config/document_type_specs.yaml`. To add a new type:
 
 1. Add a new entry to `document_type_specs.yaml` following the existing pattern
 2. Seed the config table from the spec (generate INSERT SQL from the YAML fields)
@@ -61,7 +61,7 @@ No manual steps required. Whether you added via spec file or direct SQL, the new
 
 ## Candidate Document Types for Future Expansion
 
-Pre-defined candidate specs are included (commented out) in `references/document_type_specs.yaml`. Uncomment and customize when ready.
+Pre-defined candidate specs are included (commented out) in `config/document_type_specs.yaml`. Uncomment and customize when ready.
 
 | Type | Suggested Fields |
 |------|-----------------|

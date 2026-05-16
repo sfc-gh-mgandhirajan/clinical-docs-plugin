@@ -497,7 +497,7 @@ After all steps succeed, write `.deployment/manifest.json` to the plugin workspa
 }
 ```
 
-Write this file to: `plugins/clinical-document-intelligence/.deployment/manifest.json`
+Write this file to: `.deployment/manifest.json`
 
 ---
 

@@ -53,7 +53,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 ### Fallback (When MISSING or PARTIAL)
 
 If the Cortex Search Service is not available:
-- **Use `references/document_type_specs.yaml`** for doc type specs (field definitions, extraction prompts, PHI flags)
+- **Use `config/document_type_specs.yaml`** for doc type specs (field definitions, extraction prompts, PHI flags)
 - **Use hardcoded schema definitions** from the Data Model Overview table below
 - **Inform the user**: "Data model search service is not available — using local spec definitions. Results may not reflect the latest schema updates."
 - **Never block the parent skill** — the router and sub-skills must continue to work with fallbacks
@@ -73,7 +73,7 @@ The router runs this preflight as part of its Step 0 (Data Model Knowledge pre-s
 ## Architecture
 
 ```
-references/document_type_specs.yaml (authoritative spec layer)
+config/document_type_specs.yaml (authoritative spec layer)
     │
     ├──→ {db}.{schema}.CLINICAL_DOCS_SPECS_REFERENCE (optional)
     │    └──→ CLINICAL_DOCS_SPECS_SEARCH_SVC (Spec CKE)
@@ -205,7 +205,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 );
 ```
 
-If Spec CKE is unavailable, read from `references/document_type_specs.yaml` on disk.
+If Spec CKE is unavailable, read from `config/document_type_specs.yaml` on disk.
 
 ## Data Model Overview
 
@@ -238,7 +238,7 @@ When the clinical docs data model changes:
 Config table changes → `CALL GENERATE_DYNAMIC_OBJECTS()` → Step 7 auto-refreshes `CLINICAL_DOCS_MODEL_REFERENCE` → Search service auto-refreshes based on TARGET_LAG.
 
 ### Spec CKE (manual)
-1. Edit `references/document_type_specs.yaml`
+1. Edit `config/document_type_specs.yaml`
 2. Regenerate INSERT statements from the YAML
 3. Load into `CLINICAL_DOCS_SPECS_REFERENCE`
 4. Search service auto-refreshes based on TARGET_LAG

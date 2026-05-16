@@ -192,7 +192,7 @@ After the final phase completes, use `ask_user_question`:
 ## Setup
 
 1. **Load** `references/architecture.md` for pipeline architecture context
-2. **Load** `references/document_type_specs.yaml` for doc type definitions (authoritative spec layer)
+2. **Load** `config/document_type_specs.yaml` for doc type definitions (authoritative spec layer)
 3. **Verify** Snowflake connection is active and target database/schema exist
 4. **Run Preflight Check** for Data Model Knowledge (see below)
 
@@ -210,13 +210,13 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 | Result | Status | Behavior |
 |--------|--------|----------|
 | Returns results | READY | Step 0 (Data Model Knowledge pre-step) will use dynamic search results |
-| Error / does not exist | MISSING | Step 0 skipped — sub-skills fall back to `references/document_type_specs.yaml` and hardcoded schema definitions. Inform user: "Clinical docs data model search service not available — using local spec definitions" |
+| Error / does not exist | MISSING | Step 0 skipped — sub-skills fall back to `config/document_type_specs.yaml` and hardcoded schema definitions. Inform user: "Clinical docs data model search service not available — using local spec definitions" |
 
 This preflight runs ONCE at router load. The result determines whether Step 0 below executes or is skipped.
 
 ## Data Model Knowledge — Automatic Pre-Step (Conditional on Preflight)
 
-**CRITICAL:** For intents EXTRACT, SEARCH, and AGENT, **execute Step 0 if preflight status is READY**. If preflight status is MISSING, skip Step 0 and let sub-skills use `references/document_type_specs.yaml`.
+**CRITICAL:** For intents EXTRACT, SEARCH, and AGENT, **execute Step 0 if preflight status is READY**. If preflight status is MISSING, skip Step 0 and let sub-skills use `config/document_type_specs.yaml`.
 
 ### Step 0: Query Data Model Knowledge (automatic for EXTRACT, SEARCH, AGENT)
 
@@ -312,7 +312,7 @@ Is intent EXTRACT, SEARCH, or AGENT?
 | `references/architecture.md` | End-to-end architecture and data flow |
 | `references/cortex_ai_functions.md` | Cortex AI function reference |
 | `references/supported_document_types.md` | Supported types and format constraints |
-| `references/document_type_specs.yaml` | Authoritative doc type definitions (CKE spec layer) |
+| `config/document_type_specs.yaml` | Authoritative doc type definitions (CKE spec layer) |
 | `references/metadata_as_cke.md` | CKE-driven metadata pattern and comparison with DICOM |
 
 ## Cross-Cutting Concerns

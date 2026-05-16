@@ -13,7 +13,7 @@ This approach follows the same pattern used by the DICOM imaging skill's
 ## Architecture
 
 ```
-references/document_type_specs.yaml        ← AUTHORITATIVE spec layer (human-authored)
+config/document_type_specs.yaml        ← AUTHORITATIVE spec layer (human-authored)
     │
     ├──→ Cortex Search Service             ← CKE: skills query specs dynamically
     │    (CLINICAL_DOCS_SPECS_SEARCH_SVC)     at runtime for prompts, fields, etc.
@@ -74,7 +74,7 @@ the correct config rows.
 
 ### Option A: Edit the Spec File Directly
 
-1. Add a new entry to `references/document_type_specs.yaml`
+1. Add a new entry to `config/document_type_specs.yaml`
 2. Seed the config table from the spec (SQL generation from YAML)
 3. `CALL GENERATE_DYNAMIC_OBJECTS()`
 

@@ -54,7 +54,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 - Identify PHI columns that need masking awareness in agent responses
 - Validate that referenced views and search services exist
 
-**If search service is unavailable**, fall back to `references/document_type_specs.yaml` on disk and the hardcoded Semantic View DDL below.
+**If search service is unavailable**, fall back to `config/document_type_specs.yaml` on disk and the hardcoded Semantic View DDL below.
 
 ## Placeholders
 

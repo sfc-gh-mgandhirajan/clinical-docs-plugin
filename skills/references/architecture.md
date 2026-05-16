@@ -93,7 +93,7 @@
                        │   (Spec CKE — from YAML specs)     │
                        └──────────────────────────────────┘
 
-   references/document_type_specs.yaml    ← AUTHORITATIVE spec layer
+   config/document_type_specs.yaml    ← AUTHORITATIVE spec layer
        │
        ├──→ Spec CKE (optional Cortex Search over doc type definitions)
        └──→ EXTRACTION_CONFIG table (derived from specs)
@@ -116,7 +116,7 @@
 
 ## Key Design Decisions
 
-1. **Config-driven extraction**: Extraction schemas stored in `CLINICAL_DOCS_EXTRACTION_CONFIG` table, derived from `references/document_type_specs.yaml`. UDFs (`BUILD_DOCUMENT_CLASIFICATION_EXTRACTION_JSON`, `BUILD_DOC_TYPE_EXTRACTION_JSON`) dynamically build `responseFormat` from config at runtime. The YAML spec file is the authoritative source of truth for doc type definitions — the config table is a generated artifact.
+1. **Config-driven extraction**: Extraction schemas stored in `CLINICAL_DOCS_EXTRACTION_CONFIG` table, derived from `config/document_type_specs.yaml`. UDFs (`BUILD_DOCUMENT_CLASIFICATION_EXTRACTION_JSON`, `BUILD_DOC_TYPE_EXTRACTION_JSON`) dynamically build `responseFormat` from config at runtime. The YAML spec file is the authoritative source of truth for doc type definitions — the config table is a generated artifact.
 
 2. **Dual-path processing**: Single documents use `AI_EXTRACT` directly (Steps 4.2–4.3); split documents use `AI_AGG` to aggregate across pages (Steps 4.5–4.6). Steps 4.5–4.6 depend on `DOCS_PARSE_OUTPUT` from Step 4.4, so Parse must complete first.
 
