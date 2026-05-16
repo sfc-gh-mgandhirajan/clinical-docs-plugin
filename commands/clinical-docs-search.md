@@ -1,27 +1,42 @@
 ---
 name: clinical-docs-search
-description: Quick semantic search across all extracted clinical documents
+description: Search across clinical documents using Cortex Search
 ---
 
-Search across clinical documents using Cortex Search:
+Search clinical documents using semantic + keyword search:
 
-1. Verify the Cortex Search Service exists:
+1. Read `.deployment/manifest.json` — if missing, inform user to run `/clinical-docs:deploy` first
+2. Using `{database}` and `{schema}` from manifest, verify Cortex Search Service:
 ```sql
-SHOW CORTEX SEARCH SERVICES IN SCHEMA HCLS_CLINICAL_DOCS.CLINICAL_DOCS;
+SHOW CORTEX SEARCH SERVICES LIKE 'CLINICAL_DOCS_SEARCH_SERVICE' IN SCHEMA {database}.{schema};
 ```
 
-2. If it exists, ask the user what they want to search for using `ask_user_question`
-
-3. Execute the search:
+3. **If service exists:** Ask the user what they want to search for using `ask_user_question`
+4. Execute the search:
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    'HCLS_CLINICAL_DOCS.CLINICAL_DOCS.CLINICAL_DOCS_SEARCH_SVC',
-    '{"query": "<user_query>", "columns": ["DOC_ID", "SECTION_NAME", "SEARCH_TEXT"], "limit": 10}'
+    '{database}.{schema}.CLINICAL_DOCS_SEARCH_SERVICE',
+    '{"query": "<user_query>", "columns": ["page_content", "patient_name", "document_classification", "document_relative_path"], "limit": 5}'
+);
+```
+5. Present results with document context (classification, patient, relevant text snippet)
+
+6. **If service does NOT exist:** Offer to create it:
+   - Load `skills/clinical-docs-search/SKILL.md`
+   - Or create directly:
+```sql
+CREATE OR REPLACE CORTEX SEARCH SERVICE {database}.{schema}.CLINICAL_DOCS_SEARCH_SERVICE
+    ON page_content
+    ATTRIBUTES patient_name, mrn, document_relative_path, document_classification
+    WAREHOUSE = {warehouse}
+    TARGET_LAG = '1 hour'
+AS (
+    SELECT page_content, patient_name, mrn, document_relative_path, document_classification
+    FROM {database}.{schema}.CLINICAL_DOCUMENTS_RAW_CONTENT
 );
 ```
 
-4. Present results in a readable format with document context
-
-5. If the service does NOT exist, offer to create it:
-   - Load `skills/clinical-docs-search/SKILL.md`
-   - Follow the search service creation workflow
+After search, suggest next steps:
+- "Refine your search" — allow follow-up queries
+- "Ask the Cortex Agent" — for structured questions (e.g., "which patients had readmissions?")
+- `/clinical-docs:status` — check overall pipeline health
