@@ -4,7 +4,7 @@
 
 ## Plugin Identity
 
-This plugin composes skills from `skills/hcls-provider-cdata-clinical-docs/` into a deployable, enforceable clinical document processing solution. The skills provide domain logic; this AGENTS.md provides enforcement rules.
+This plugin composes skills from `skills/` into a deployable, enforceable clinical document processing solution. The skills provide domain logic; this AGENTS.md provides enforcement rules.
 
 ## Required Architecture
 
