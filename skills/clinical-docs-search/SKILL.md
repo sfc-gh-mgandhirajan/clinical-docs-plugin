@@ -32,7 +32,7 @@ The clinical-docs router automatically runs this step before loading this skill.
 **Query searchable columns and content structure:**
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_SEARCH_SVC',
+    '{db}.{schema}.CLINICAL_DOCS_MODEL_SEARCH_SVC',
     '{"query": "RAW_CONTENT searchable columns page content classification patient", "columns": ["table_name", "column_name", "data_type", "description", "contains_phi"]}'
 );
 ```

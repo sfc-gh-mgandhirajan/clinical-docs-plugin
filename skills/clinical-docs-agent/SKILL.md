@@ -35,7 +35,7 @@ The clinical-docs router automatically runs this step before loading this skill.
 **Query pivot view columns and relationships for Semantic View grounding:**
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_SEARCH_SVC',
+    '{db}.{schema}.CLINICAL_DOCS_MODEL_SEARCH_SVC',
     '{"query": "pivot view columns dimensions metrics patient MRN diagnosis", "columns": ["table_name", "column_name", "data_type", "description", "contains_phi", "relationships"]}'
 );
 ```
@@ -43,7 +43,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 **Query doc type specs for agent orchestration instruction:**
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_SEARCH_SVC',
+    '{db}.{schema}.CLINICAL_DOCS_SPECS_SEARCH_SVC',
     '{"query": "all configured document types", "columns": ["doc_type", "field_name", "extraction_question"]}'
 );
 ```

@@ -83,7 +83,7 @@
         └───────────┘
               │
               │        ┌──────────────────────────────────┐
-              └───────→│ DATA_MODEL_KNOWLEDGE schema       │
+              └───────→│ {schema} schema       │
                        │ CLINICAL_DOCS_MODEL_REFERENCE     │
                        │ → CLINICAL_DOCS_MODEL_SEARCH_SVC  │
                        │   (Schema CKE — auto-generated)   │
@@ -143,8 +143,8 @@
 | Object Type | Count | Schema | Details |
 |------------|-------|--------|---------|
 | Tables | 8 | {schema} | CLINICAL_DOCS_EXTRACTION_CONFIG, DOCUMENT_HIERARCHY, DOCS_PARSE_OUTPUT, DOC_CLASSIFICATION_METADATA_ROWS, DOC_TYPE_SPECIFIC_VALUES_EXTRACT_OUTPUT, CLINICAL_DOCUMENTS_RAW_CONTENT, DOCUMENT_CLASSIFICATION_EXTRACTION_FIELD_CONFIG, DOC_TYPE_SPECIFIC_EXTRACTION_CONFIG |
-| Tables | 1 | DATA_MODEL_KNOWLEDGE | CLINICAL_DOCS_MODEL_REFERENCE |
-| Tables | 1 (optional) | DATA_MODEL_KNOWLEDGE | CLINICAL_DOCS_SPECS_REFERENCE (loaded from document_type_specs.yaml) |
+| Tables | 1 | {schema} | CLINICAL_DOCS_MODEL_REFERENCE |
+| Tables | 1 (optional) | {schema} | CLINICAL_DOCS_SPECS_REFERENCE (loaded from document_type_specs.yaml) |
 | Views | Auto-generated pivot views + MRN_PATIENT_MAPPING (auto-grows with doc types) | {schema} | One pivot view per doc type with a VIEW_NAME in extraction config |
 | UDFs | 3 | {schema} | BUILD_DOCUMENT_CLASIFICATION_EXTRACTION_JSON, BUILD_DOC_TYPE_EXTRACTION_JSON, INJECT_IMAGE_DESCRIPTIONS |
 | Stored Procedures | 7 | {schema} | GENERATE_DYNAMIC_OBJECTS + 6 pipeline procs (modular `proc_*.sql` files) |
@@ -153,8 +153,8 @@
 | Stage | 1 | {schema} | INTERNAL_CLINICAL_DOCS_STAGE |
 | Semantic View | 1 | {schema} | CLINICAL_DOCS_SEMANTIC_VIEW (dynamically generated) |
 | Cortex Search Service | 1 | {schema} | CLINICAL_DOCS_SEARCH_SERVICE (created by clinical-docs-search sub-skill) |
-| Cortex Search Service | 1 | DATA_MODEL_KNOWLEDGE | CLINICAL_DOCS_MODEL_SEARCH_SVC (Schema CKE — auto-generated schema metadata) |
-| Cortex Search Service | 1 (optional) | DATA_MODEL_KNOWLEDGE | CLINICAL_DOCS_SPECS_SEARCH_SVC (Spec CKE — from document_type_specs.yaml) |
+| Cortex Search Service | 1 | {schema} | CLINICAL_DOCS_MODEL_SEARCH_SVC (Schema CKE — auto-generated schema metadata) |
+| Cortex Search Service | 1 (optional) | {schema} | CLINICAL_DOCS_SPECS_SEARCH_SVC (Spec CKE — from document_type_specs.yaml) |
 | Agent | 1 | AGENTS | Created by clinical-docs-agent sub-skill |
 
 ### Stored Procedures
@@ -182,8 +182,8 @@ Each pipeline procedure is defined in its own file under `scripts/proc_*.sql` wi
 | 4   | MRN_PATIENT_MAPPING view | Fully dynamic |
 | 5   | REFRESH_RAW_CONTENT_TASK (with TEMP_STREAM_SNAPSHOT + dynamic JOINs) | Fully dynamic |
 | 6   | CLINICAL_DOCS_SEMANTIC_VIEW | Fully dynamic |
-| 7   | DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_REFERENCE refresh (Schema CKE) | Fully dynamic |
-| 7b  | DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_REFERENCE refresh (Spec CKE) | Fully dynamic |
+| 7   | {schema}.CLINICAL_DOCS_MODEL_REFERENCE refresh (Schema CKE) | Fully dynamic |
+| 7b  | {schema}.CLINICAL_DOCS_SPECS_REFERENCE refresh (Spec CKE) | Fully dynamic |
 
 ## Adding a New Document Type
 

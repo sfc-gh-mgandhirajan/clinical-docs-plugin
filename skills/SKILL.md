@@ -202,7 +202,7 @@ Before routing to any sub-skill, verify the Clinical Docs Data Model Knowledge r
 
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_SEARCH_SVC',
+    '{db}.{schema}.CLINICAL_DOCS_MODEL_SEARCH_SVC',
     '{"query": "test", "columns": ["SEARCH_TEXT"], "limit": 1}'
 );
 ```
@@ -225,7 +225,7 @@ Before generating any DDL, building pipelines, creating search services, or conf
 1. **Query the clinical docs model search service** for relevant tables/columns:
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_SEARCH_SVC',
+    '{db}.{schema}.CLINICAL_DOCS_MODEL_SEARCH_SVC',
     '{"query": "<context from user request>", "columns": ["table_name", "column_name", "data_type", "description", "contains_phi", "relationships"]}'
 );
 ```
@@ -233,7 +233,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 2. **Optionally query the spec search service** for doc type definitions:
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_SEARCH_SVC',
+    '{db}.{schema}.CLINICAL_DOCS_SPECS_SEARCH_SVC',
     '{"query": "<doc type from user request>", "columns": ["doc_type", "field_name", "extraction_question", "data_type", "contains_phi"]}'
 );
 ```

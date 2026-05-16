@@ -8,18 +8,23 @@
 -- Parameters (set before execution):
 --   $V_DB        — target database
 --   $V_SCHEMA    — target schema
---   $V_STAGE     — stage name (unqualified, e.g., 'CLINICAL_DOCS_STAGE')
+--   $V_STAGE_FQN — fully qualified stage name (e.g., 'DB.SCHEMA.STAGE_NAME')
+--                  Use this when stage is in a different schema than target
+--   $V_STAGE     — stage name (unqualified fallback, assumes target schema)
 --   $V_WAREHOUSE — warehouse for task execution
 --   $V_MODE      — 'stream' (triggered by new files) or 'schedule'
 --   $V_SCHEDULE  — schedule interval if MODE='schedule' (e.g., '1 HOUR', 'USING CRON 0 */6 * * * UTC')
 -- =============================================================================
+
+-- Resolve stage FQN: use $V_STAGE_FQN if provided, otherwise construct from $V_DB.$V_SCHEMA.$V_STAGE
+-- SET V_RESOLVED_STAGE = COALESCE($V_STAGE_FQN, $V_DB || '.' || $V_SCHEMA || '.' || $V_STAGE);
 
 -- =============================================================================
 -- STEP 1: Directory Stream (detects new files arriving on stage)
 -- =============================================================================
 EXECUTE IMMEDIATE
     'CREATE OR REPLACE STREAM ' || $V_DB || '.' || $V_SCHEMA || '.CLINICAL_DOCS_DIRECTORY_STREAM' ||
-    ' ON STAGE @' || $V_DB || '.' || $V_SCHEMA || '.' || $V_STAGE;
+    ' ON STAGE @' || COALESCE($V_STAGE_FQN, $V_DB || '.' || $V_SCHEMA || '.' || $V_STAGE);
 
 -- =============================================================================
 -- STEP 2: Root Task (triggered by stream or schedule)

@@ -23,7 +23,7 @@ references/document_type_specs.yaml        ← AUTHORITATIVE spec layer (human-a
          └──→ GENERATE_DYNAMIC_OBJECTS()   ← Execution engine (unchanged)
               │
               ├── Pivot views, Semantic View, refresh task
-              └── DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_REFERENCE
+              └── {schema}.CLINICAL_DOCS_MODEL_REFERENCE
                   └── CLINICAL_DOCS_MODEL_SEARCH_SVC (schema metadata CKE)
 ```
 
@@ -106,7 +106,7 @@ The Spec CKE table and search service are now created automatically by `dynamic_
 To recreate manually if needed:
 
 ```sql
-CREATE TABLE IF NOT EXISTS {db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_REFERENCE (
+CREATE TABLE IF NOT EXISTS {db}.{schema}.CLINICAL_DOCS_SPECS_REFERENCE (
     SEARCH_TEXT VARCHAR,
     DOC_TYPE VARCHAR,
     FIELD_NAME VARCHAR,
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS {db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_REFEREN
 );
 
 CREATE OR REPLACE CORTEX SEARCH SERVICE
-    {db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_SEARCH_SVC
+    {db}.{schema}.CLINICAL_DOCS_SPECS_SEARCH_SVC
     ON search_text
     ATTRIBUTES doc_type, field_name, data_type, contains_phi
     WAREHOUSE = {warehouse}
@@ -129,14 +129,14 @@ AS (
     SELECT search_text, doc_type, field_name, extraction_question,
            data_type, display_order, view_name, is_identity_field,
            contains_phi, description
-    FROM {db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_REFERENCE
+    FROM {db}.{schema}.CLINICAL_DOCS_SPECS_REFERENCE
 );
 ```
 
 ### Loading Specs into the Table
 
 ```sql
-INSERT INTO {db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_REFERENCE
+INSERT INTO {db}.{schema}.CLINICAL_DOCS_SPECS_REFERENCE
     (SEARCH_TEXT, DOC_TYPE, FIELD_NAME, EXTRACTION_QUESTION, DATA_TYPE,
      DISPLAY_ORDER, VIEW_NAME, IS_IDENTITY_FIELD, CONTAINS_PHI, DESCRIPTION)
 VALUES
@@ -156,7 +156,7 @@ This change is **additive** — nothing breaks:
 |-----------|--------|--------|
 | `GENERATE_DYNAMIC_OBJECTS()` | None | Still reads from `EXTRACTION_CONFIG`, still produces all dynamic objects |
 | `EXTRACTION_CONFIG` table | Now DERIVED from specs | Same schema, same data, different authoring flow |
-| `DATA_MODEL_KNOWLEDGE` | Unchanged | Step 7 still auto-refreshes from config |
+| `{schema}` | Unchanged | Step 7 still auto-refreshes from config |
 | Gate E4-E5 | Can optionally query Spec CKE | Richer defaults for doc type confirmation |
 | OTHER onboarding (E9) | Can query Spec CKE for templates | Better auto-detection suggestions |
 | `document_type_specs.yaml` | NEW — authoritative spec layer | Always available as fallback, human-readable |

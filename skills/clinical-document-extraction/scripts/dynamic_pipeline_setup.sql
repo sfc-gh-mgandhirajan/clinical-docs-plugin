@@ -137,12 +137,10 @@ EXECUTE IMMEDIATE
 )';
 
 -- =============================================================================
--- STEP 2b: MODEL REFERENCE TABLE (schema docs — for DATA_MODEL_KNOWLEDGE Cortex Search)
+-- STEP 2b: MODEL REFERENCE TABLE (schema docs — for Cortex Search CKE)
 -- =============================================================================
-EXECUTE IMMEDIATE 'CREATE SCHEMA IF NOT EXISTS ' || $V_DB || '.DATA_MODEL_KNOWLEDGE';
-
 EXECUTE IMMEDIATE
-'CREATE OR REPLACE TABLE ' || $V_DB || '.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_REFERENCE (
+'CREATE OR REPLACE TABLE ' || $V_DB || '.' || $V_SCHEMA || '.CLINICAL_DOCS_MODEL_REFERENCE (
     SEARCH_TEXT VARCHAR(4000),
     TABLE_NAME VARCHAR(200) NOT NULL,
     COLUMN_NAME VARCHAR(200) NOT NULL,
@@ -160,7 +158,7 @@ EXECUTE IMMEDIATE
 -- Enables dynamic discovery: "What fields does a discharge summary have?"
 -- Source of truth: references/document_type_specs.yaml
 EXECUTE IMMEDIATE
-'CREATE OR REPLACE TABLE ' || $V_DB || '.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_REFERENCE (
+'CREATE OR REPLACE TABLE ' || $V_DB || '.' || $V_SCHEMA || '.CLINICAL_DOCS_SPECS_REFERENCE (
     SEARCH_TEXT VARCHAR(4000),
     DOC_TYPE VARCHAR(200) NOT NULL,
     FIELD_NAME VARCHAR(200) NOT NULL,
@@ -179,7 +177,7 @@ EXECUTE IMMEDIATE
 -- Schema CKE: skills query "What tables exist? Which columns contain PHI?"
 -- Populated by GENERATE_DYNAMIC_OBJECTS() Step 7 from config table.
 EXECUTE IMMEDIATE
-'CREATE OR REPLACE CORTEX SEARCH SERVICE ' || $V_DB || '.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_SEARCH_SVC
+'CREATE OR REPLACE CORTEX SEARCH SERVICE ' || $V_DB || '.' || $V_SCHEMA || '.CLINICAL_DOCS_MODEL_SEARCH_SVC
     ON search_text
     ATTRIBUTES table_name, column_name, data_type, category, contains_phi
     WAREHOUSE = ' || $V_WAREHOUSE || '
@@ -187,14 +185,14 @@ EXECUTE IMMEDIATE
 AS (
     SELECT search_text, table_name, column_name, data_type, domain_tag,
            category, description, constraints, contains_phi, relationships
-    FROM ' || $V_DB || '.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_REFERENCE
+    FROM ' || $V_DB || '.' || $V_SCHEMA || '.CLINICAL_DOCS_MODEL_REFERENCE
 )';
 
 -- Spec CKE: skills query "What fields does a discharge summary have?"
 -- Populated by GENERATE_DYNAMIC_OBJECTS() Step 7b from config table.
 -- Source of truth: references/document_type_specs.yaml
 EXECUTE IMMEDIATE
-'CREATE OR REPLACE CORTEX SEARCH SERVICE ' || $V_DB || '.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_SEARCH_SVC
+'CREATE OR REPLACE CORTEX SEARCH SERVICE ' || $V_DB || '.' || $V_SCHEMA || '.CLINICAL_DOCS_SPECS_SEARCH_SVC
     ON search_text
     ATTRIBUTES doc_type, field_name, data_type, contains_phi
     WAREHOUSE = ' || $V_WAREHOUSE || '
@@ -203,7 +201,7 @@ AS (
     SELECT search_text, doc_type, field_name, extraction_question,
            data_type, display_order, view_name, is_identity_field,
            contains_phi, description
-    FROM ' || $V_DB || '.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_REFERENCE
+    FROM ' || $V_DB || '.' || $V_SCHEMA || '.CLINICAL_DOCS_SPECS_REFERENCE
 )';
 
 -- =============================================================================
@@ -368,8 +366,8 @@ def inject_descriptions(page_content, image_data):
 --   4.  Generates MRN_PATIENT_MAPPING view
 --   5.  Generates the refresh task with dynamic JOINs to all discovered pivot views
 --   6.  Generates CLINICAL_DOCS_SEMANTIC_VIEW with DIMENSIONS + METRICS
---   7.  Refreshes DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_REFERENCE from config table (Schema CKE)
---   7b. Refreshes DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_REFERENCE from config table (Spec CKE)
+--   7.  Refreshes CLINICAL_DOCS_MODEL_REFERENCE from config table (Schema CKE)
+--   7b. Refreshes CLINICAL_DOCS_SPECS_REFERENCE from config table (Spec CKE)
 --
 -- IMPORTANT — EXECUTION CONSTRAINTS:
 --   * This block CANNOT be run via `snow sql -f` (session variables + $$ conflict).
@@ -666,7 +664,7 @@ BEGIN
             COALESCE(' || v_coalesce_mrn || ', NULL) AS MRN,
             CONCAT(''[Page '', s.PAGE_NUMBER_IN_PARENT, '']'' || CHR(10) || CHR(10), s.PAGE_CONTENT) AS PAGE_CONTENT,
             s.DOC_TOTAL_PAGES,
-            GET_PRESIGNED_URL(@' || v_stage_fqn || ', s.DOCUMENT_RELATIVE_PATH, 604800) AS PRESIGNED_URL,
+            GET_PRESIGNED_URL(@' || v_stage_fqn || ', s.DOCUMENT_RELATIVE_PATH, 3600) AS PRESIGNED_URL,
             CONCAT(''snow://stage/'', REPLACE(s.DOCUMENT_STAGE, ''@'', ''''), ''/'', s.DOCUMENT_RELATIVE_PATH) AS STAGE_FILE_URL,
             CURRENT_TIMESTAMP() AS URL_GENERATED_AT
         FROM ' || v_fqn || '.TEMP_STREAM_SNAPSHOT s
@@ -706,7 +704,7 @@ BEGIN
         DROP TABLE IF EXISTS ' || v_fqn || '.TEMP_STREAM_SNAPSHOT;
 
         UPDATE ' || v_fqn || '.CLINICAL_DOCUMENTS_RAW_CONTENT
-        SET PRESIGNED_URL = GET_PRESIGNED_URL(@' || v_stage_fqn || ', DOCUMENT_RELATIVE_PATH, 604800),
+        SET PRESIGNED_URL = GET_PRESIGNED_URL(@' || v_stage_fqn || ', DOCUMENT_RELATIVE_PATH, 3600),
             URL_GENERATED_AT = CURRENT_TIMESTAMP()
         WHERE URL_GENERATED_AT < DATEADD(''day'', -6, CURRENT_TIMESTAMP());
     END';
@@ -813,13 +811,13 @@ BEGIN
     END IF;
 
     -- =====================================================================
-    -- 7. REFRESH SCHEMA CKE (DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_REFERENCE)
+    -- 7. REFRESH SCHEMA CKE (CLINICAL_DOCS_MODEL_REFERENCE)
     --    Views created earlier in this proc are NOT visible in INFORMATION_SCHEMA
     --    until the transaction commits. The config table is the source of truth.
     --    CLINICAL_DOCS_MODEL_SEARCH_SVC auto-refreshes from this table (TARGET_LAG=1d).
     -- =====================================================================
     BEGIN
-        LET v_dm_fqn VARCHAR := v_db || '.DATA_MODEL_KNOWLEDGE';
+        LET v_dm_fqn VARCHAR := v_db || '.' || v_schema;
         EXECUTE IMMEDIATE '
             DELETE FROM ' || :v_dm_fqn || '.CLINICAL_DOCS_MODEL_REFERENCE';
 
@@ -851,21 +849,21 @@ BEGIN
             FROM ' || :v_fqn || '.CLINICAL_DOCS_EXTRACTION_CONFIG cfg
             ORDER BY cfg.CONFIG_TYPE, cfg.DOC_TYPE, cfg.DISPLAY_ORDER';
 
-        v_msg := v_msg || 'Refreshed DATA_MODEL_KNOWLEDGE from config table. ';
+        v_msg := v_msg || 'Refreshed model reference from config table. ';
     EXCEPTION
         WHEN OTHER THEN
             v_msg := v_msg || 'Model reference refresh skipped (table may not exist yet). ';
     END;
 
     -- =====================================================================
-    -- 7b. REFRESH SPEC CKE (DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_REFERENCE)
+    -- 7b. REFRESH SPEC CKE (CLINICAL_DOCS_SPECS_REFERENCE)
     --     Populates the Spec CKE table from the same config table.
     --     Enables dynamic discovery: "What fields does a discharge summary have?"
     --     CLINICAL_DOCS_SPECS_SEARCH_SVC auto-refreshes from this table (TARGET_LAG=1d).
     --     Source of truth: references/document_type_specs.yaml -> config table -> here
     -- =====================================================================
     BEGIN
-        LET v_spec_fqn VARCHAR := v_db || '.DATA_MODEL_KNOWLEDGE';
+        LET v_spec_fqn VARCHAR := v_db || '.' || v_schema;
         EXECUTE IMMEDIATE '
             DELETE FROM ' || :v_spec_fqn || '.CLINICAL_DOCS_SPECS_REFERENCE';
 

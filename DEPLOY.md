@@ -132,6 +132,45 @@ Options from YAML:
 
 Record: `{selected_document_types}`
 
+### 🛑 MANDATORY STOP — Decision 3b: Customize Extraction Questions
+
+Present guidance on config contextualization:
+
+> **Important:** The extraction quality depends on how well the questions in `config/document_type_specs.yaml` match YOUR documents.
+>
+> Each document type has a set of `extraction_question` fields that tell the AI what to look for. The defaults are generic — customizing them for your specific document formats dramatically improves accuracy.
+>
+> **Examples of good customization:**
+> | Default Question | Customized for Your Org |
+> |---|---|
+> | "What is the primary discharge diagnosis?" | "What is the primary ICD-10 discharge diagnosis code and description?" |
+> | "What is the discharge disposition?" | "What is the discharge disposition? Include facility name if transferred." |
+> | "What are the findings?" | "What are the radiological findings? Include laterality and measurements." |
+>
+> **How to customize:** Edit `config/document_type_specs.yaml` — each entry has:
+> - `field_name`: Column name in the output table
+> - `extraction_question`: The prompt given to AI (this is what you customize)
+> - `data_type`: Expected output format
+>
+> What would you like to do?
+
+Options:
+- **Use defaults now, customize later** (recommended for first deployment — see results, then refine)
+- **Review and edit the config file now** (opens document_type_specs.yaml for editing)
+- **Upload a sample document** so CoCo can suggest better extraction questions based on your actual content
+
+If "Review and edit":
+- Open `config/document_type_specs.yaml` and walk through the fields for each selected doc type
+- Explain the structure and let the user modify extraction_question values
+
+If "Upload a sample":
+- Parse ONE document with AI_PARSE_DOCUMENT
+- Present the content summary
+- Suggest tailored extraction questions based on what's in the document
+- Update the YAML with user-approved questions
+
+Record: `{config_customized}` (defaults | edited | sample-guided)
+
 ### 🛑 MANDATORY STOP — Decision 4: Warehouse Selection
 
 Present detected warehouses with cost context:
@@ -379,6 +418,41 @@ SHOW TASKS IN SCHEMA {target_database}.{target_schema};
 
 Present: "Task DAG active: {N} tasks, root task status: STARTED"
 
+**If files already exist on stage AND orchestration is stream_task or scheduled:**
+
+Trigger the first pipeline run by refreshing the directory table (generates stream data):
+```sql
+ALTER STAGE @{target_database}.{target_schema}.{source_stage} REFRESH;
+```
+
+Then monitor progress (poll every 30 seconds, up to 10 minutes):
+```sql
+SELECT NAME, STATE, SCHEDULED_TIME, COMPLETED_TIME, ERROR_MESSAGE
+FROM TABLE(INFORMATION_SCHEMA.TASK_HISTORY(
+    TASK_NAME => 'CLINICAL_DOCS_PIPELINE_ROOT',
+    SCHEDULED_TIME_RANGE_START => DATEADD('hour', -1, CURRENT_TIMESTAMP())
+))
+ORDER BY SCHEDULED_TIME DESC
+LIMIT 5;
+```
+
+Present progress:
+> Pipeline triggered. Monitoring task DAG execution...
+> - ROOT (preprocess): {status}
+> - CLASSIFY: {status}
+> - EXTRACT: {status}
+> - PARSE: {status}
+> - REFRESH: {status}
+>
+> {N} documents processed successfully.
+
+**Do NOT call stored procedures manually.** The task DAG handles execution order and dependencies.
+
+If any task fails, present the error and suggest:
+- Check warehouse is active: `ALTER WAREHOUSE {warehouse} RESUME;`
+- Check task history for details
+- Re-trigger: `EXECUTE TASK {target_database}.{target_schema}.CLINICAL_DOCS_PIPELINE_ROOT;`
+
 ---
 
 **Step 7: Write Deployment Manifest**
@@ -427,7 +501,72 @@ Write this file to: `plugins/clinical-document-intelligence/.deployment/manifest
 
 ---
 
-## Phase 4: Confirmation
+## Phase 4: Post-Pipeline Capabilities
+
+After the extraction pipeline has processed documents successfully, offer additional capabilities:
+
+### 🛑 MANDATORY STOP — Decision 8: Additional Capabilities
+
+> Your extraction pipeline is running. What additional capabilities do you want to enable?
+
+Options (multi-select):
+- **Cortex Search Service** — Semantic + keyword search over document content (recommended)
+- **Cortex Agent** — Natural language Q&A combining structured queries + full-text search (requires Search)
+- **Streamlit Viewer** — Interactive document browser with extraction review, search, and agent chat
+- **Skip for now** — Can add these later
+
+Record: `{post_pipeline_capabilities}`
+
+### If Cortex Search selected:
+
+Execute the search service creation (from `skills/clinical-docs-search/SKILL.md`):
+```sql
+CREATE OR REPLACE CORTEX SEARCH SERVICE {target_database}.{target_schema}.CLINICAL_DOCS_SEARCH_SERVICE
+    ON page_content
+    ATTRIBUTES patient_name, mrn, document_relative_path, document_classification
+    WAREHOUSE = {deploy_warehouse}
+    TARGET_LAG = '1 hour'
+AS (
+    SELECT page_content, patient_name, mrn, document_relative_path, document_classification
+    FROM {target_database}.{target_schema}.CLINICAL_DOCUMENTS_RAW_CONTENT
+);
+```
+
+Verify: `SHOW CORTEX SEARCH SERVICES IN SCHEMA {target_database}.{target_schema};`
+
+### If Cortex Agent selected (requires Search):
+
+1. Create Semantic View (from `skills/clinical-docs-agent/SKILL.md` Step 1):
+   - Build semantic view over all pivot views + MRN_PATIENT_MAPPING
+   - Include dimensions with SYNONYMS for discoverability
+   - Include metrics (patient count, document counts per type)
+
+2. Create Cortex Agent (from `skills/clinical-docs-agent/SKILL.md` Step 2):
+```sql
+CREATE OR REPLACE CORTEX AGENT {target_database}.{target_schema}.CLINICAL_DOCUMENTS_AGENT
+    TOOLS = (
+        CORTEX_ANALYST_TOOL('{target_database}.{target_schema}.CLINICAL_DOCS_SEMANTIC_VIEW') AS CLINICAL_DOCS_ANALYST,
+        CORTEX_SEARCH_TOOL('{target_database}.{target_schema}.CLINICAL_DOCS_SEARCH_SERVICE', 'page_content') AS CLINICAL_DOCS_SEARCH
+    );
+```
+
+3. Test with sample query to verify both tools work.
+
+### If Streamlit Viewer selected:
+
+Deploy the pre-built viewer app from `streamlit/`:
+```bash
+snow streamlit deploy --replace \
+    --database {target_database} \
+    --schema {target_schema} \
+    --name CLINICAL_DOCS_VIEWER
+```
+
+The app is pre-built with 5 tabs (Browse, Extraction Review, Search, Agent Chat, Pipeline Status) and is SiS-compatible (Streamlit 1.22).
+
+---
+
+## Phase 5: Confirmation
 
 Present final status:
 

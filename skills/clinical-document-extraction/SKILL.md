@@ -32,7 +32,7 @@ The clinical-docs router automatically runs this step before loading this skill.
 **Query extraction config and doc type definitions:**
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_SEARCH_SVC',
+    '{db}.{schema}.CLINICAL_DOCS_SPECS_SEARCH_SVC',
     '{"query": "extraction fields for all document types", "columns": ["doc_type", "field_name", "extraction_question", "data_type", "contains_phi", "view_name"]}'
 );
 ```

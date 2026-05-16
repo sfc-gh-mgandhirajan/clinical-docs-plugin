@@ -21,14 +21,14 @@ Before executing any data model search, verify both the reference table and Cort
 ### Check 1: Schema Reference Table
 
 ```sql
-SELECT COUNT(*) FROM {db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_REFERENCE LIMIT 1;
+SELECT COUNT(*) FROM {db}.{schema}.CLINICAL_DOCS_MODEL_REFERENCE LIMIT 1;
 ```
 
 ### Check 2: Schema Cortex Search Service
 
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_SEARCH_SVC',
+    '{db}.{schema}.CLINICAL_DOCS_MODEL_SEARCH_SVC',
     '{"query": "test", "columns": ["SEARCH_TEXT"], "limit": 1}'
 );
 ```
@@ -37,7 +37,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_SEARCH_SVC',
+    '{db}.{schema}.CLINICAL_DOCS_SPECS_SEARCH_SVC',
     '{"query": "test", "columns": ["SEARCH_TEXT"], "limit": 1}'
 );
 ```
@@ -48,7 +48,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 | OK | OK | FAIL | READY | Schema CKE available; specs fall back to `document_type_specs.yaml` on disk |
 | OK | FAIL | * | PARTIAL | Table exists but search service missing — guide user to recreate (see Setup) |
 | FAIL | FAIL | * | MISSING | Guide user through full Setup below |
-| ERROR | ERROR | * | ERROR | Show error, check permissions on `{db}.DATA_MODEL_KNOWLEDGE` |
+| ERROR | ERROR | * | ERROR | Show error, check permissions on `{db}.{schema}` |
 
 ### Fallback (When MISSING or PARTIAL)
 
@@ -75,12 +75,12 @@ The router runs this preflight as part of its Step 0 (Data Model Knowledge pre-s
 ```
 references/document_type_specs.yaml (authoritative spec layer)
     │
-    ├──→ {db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_REFERENCE (optional)
+    ├──→ {db}.{schema}.CLINICAL_DOCS_SPECS_REFERENCE (optional)
     │    └──→ CLINICAL_DOCS_SPECS_SEARCH_SVC (Spec CKE)
     │
     └──→ CLINICAL_DOCS_EXTRACTION_CONFIG (derived from specs)
          └──→ GENERATE_DYNAMIC_OBJECTS() Step 7
-              └──→ {db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_REFERENCE
+              └──→ {db}.{schema}.CLINICAL_DOCS_MODEL_REFERENCE
                    └──→ CLINICAL_DOCS_MODEL_SEARCH_SVC (Schema CKE)
 ```
 
@@ -101,7 +101,7 @@ Both CKE layers are created by `dynamic_pipeline_setup.sql`:
 If the search services do not exist but tables do, recreate services manually:
 
 ```sql
-CREATE OR REPLACE CORTEX SEARCH SERVICE {db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_SEARCH_SVC
+CREATE OR REPLACE CORTEX SEARCH SERVICE {db}.{schema}.CLINICAL_DOCS_MODEL_SEARCH_SVC
     ON search_text
     ATTRIBUTES table_name, column_name, data_type, category, contains_phi
     WAREHOUSE = {warehouse}
@@ -109,10 +109,10 @@ CREATE OR REPLACE CORTEX SEARCH SERVICE {db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_
 AS (
     SELECT search_text, table_name, column_name, data_type, domain_tag,
            category, description, constraints, contains_phi, relationships
-    FROM {db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_REFERENCE
+    FROM {db}.{schema}.CLINICAL_DOCS_MODEL_REFERENCE
 );
 
-CREATE OR REPLACE CORTEX SEARCH SERVICE {db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_SEARCH_SVC
+CREATE OR REPLACE CORTEX SEARCH SERVICE {db}.{schema}.CLINICAL_DOCS_SPECS_SEARCH_SVC
     ON search_text
     ATTRIBUTES doc_type, field_name, data_type, contains_phi
     WAREHOUSE = {warehouse}
@@ -121,7 +121,7 @@ AS (
     SELECT search_text, doc_type, field_name, extraction_question,
            data_type, display_order, view_name, is_identity_field,
            contains_phi, description
-    FROM {db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_REFERENCE
+    FROM {db}.{schema}.CLINICAL_DOCS_SPECS_REFERENCE
 );
 ```
 
@@ -135,7 +135,7 @@ Use `ask_user_question` to ask: "What concept are you looking for? (e.g., patien
 
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_SEARCH_SVC',
+    '{db}.{schema}.CLINICAL_DOCS_MODEL_SEARCH_SVC',
     '{"query": "{user_concept}", "columns": ["table_name", "column_name", "data_type", "description"]}'
 );
 ```
@@ -144,7 +144,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_SEARCH_SVC',
+    '{db}.{schema}.CLINICAL_DOCS_MODEL_SEARCH_SVC',
     '{"query": "all columns in {TABLE_NAME}", "columns": ["column_name", "data_type", "constraints", "description"]}'
 );
 ```
@@ -154,7 +154,7 @@ Use the results to reconstruct `CREATE TABLE` or `CREATE VIEW` DDL dynamically w
 ```sql
 WITH model_knowledge AS (
     SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-        '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_SEARCH_SVC',
+        '{db}.{schema}.CLINICAL_DOCS_MODEL_SEARCH_SVC',
         '{"query": "{TABLE_NAME} columns definitions constraints", "columns": ["table_name", "column_name", "data_type", "constraints", "description"]}'
     ) AS context
 )
@@ -169,7 +169,7 @@ FROM model_knowledge;
 
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_SEARCH_SVC',
+    '{db}.{schema}.CLINICAL_DOCS_MODEL_SEARCH_SVC',
     '{"query": "columns containing PHI protected health information", "columns": ["table_name", "column_name", "description", "contains_phi"]}'
 );
 ```
@@ -178,7 +178,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_SEARCH_SVC',
+    '{db}.{schema}.CLINICAL_DOCS_MODEL_SEARCH_SVC',
     '{"query": "foreign key relationships joins between tables", "columns": ["table_name", "column_name", "relationships", "description"]}'
 );
 ```
@@ -187,7 +187,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_MODEL_SEARCH_SVC',
+    '{db}.{schema}.CLINICAL_DOCS_MODEL_SEARCH_SVC',
     '{"query": "{category} tables and columns", "columns": ["table_name", "column_name", "data_type", "category", "description"]}'
 );
 ```
@@ -200,7 +200,7 @@ If `$DMK_AVAILABLE = FULL`:
 
 ```sql
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    '{db}.DATA_MODEL_KNOWLEDGE.CLINICAL_DOCS_SPECS_SEARCH_SVC',
+    '{db}.{schema}.CLINICAL_DOCS_SPECS_SEARCH_SVC',
     '{"query": "{doc_type} extraction fields", "columns": ["doc_type", "field_name", "extraction_question", "data_type", "contains_phi"]}'
 );
 ```
