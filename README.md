@@ -128,9 +128,12 @@ After approval, CoCo provisions everything and writes a deployment manifest. Fut
 ### Post-Deployment
 
 ```
-/clinical-docs:extract    # Process documents (or automatic if Stream+Task)
-/clinical-docs:search     # Enable semantic search
-/clinical-docs:status     # Check pipeline health
+/clinical-docs:deploy        # First-time: guided setup (stage, doc types, orchestration)
+/clinical-docs:extract       # Process documents (or automatic if Stream+Task)
+/clinical-docs:search        # Semantic search across documents
+/clinical-docs:agent         # Natural language Q&A via Cortex Agent
+/clinical-docs:viewer        # Deploy or open the Streamlit document viewer
+/clinical-docs:status        # Check pipeline health
 ```
 
 ---
