@@ -1,6 +1,6 @@
 ---
 name: data-model-knowledge
-parent_skill: hcls-provider-cdata-clinical-docs
+parent_skill: clinical-docs
 description: "Query the clinical documents data model reference via Cortex Search Service. Answers questions about table structures, column types, PHI fields, relationships, and DDL generation for the clinical document extraction schema."
 tools: ["snowflake_sql_execute"]
 ---

@@ -1,5 +1,5 @@
 ---
-name: hcls-provider-cdata-clinical-docs
+name: clinical-docs
 description: "Router for clinical document intelligence on Snowflake with defense-in-depth guardrails. Detects intent and routes to sub-skills using phased orchestration with mandatory re-entry between phases. Triggers: clinical document, document extraction, PDF extraction, discharge summary, pathology report, radiology report, clinical docs, AI_PARSE_DOCUMENT, AI_COMPLETE, AI_EXTRACT, AI_AGG, document classification, document pipeline, clinical search, clinical agent."
 tools: ["*"]
 platform_affinities:
@@ -328,7 +328,7 @@ To extend this skill with a new sub-skill (e.g., `clinical-docs-export`):
 1. Create the sub-skill folder and SKILL.md:
    ```
    clinical-docs-export/
-     SKILL.md    # Must have parent_skill: hcls-provider-cdata-clinical-docs
+     SKILL.md    # Must have parent_skill: clinical-docs
    ```
 
 2. Add a routing entry to the Intent Routing table (Step 2) in this file:

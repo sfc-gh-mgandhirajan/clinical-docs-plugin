@@ -1,6 +1,6 @@
 ---
 name: clinical-docs-viewer
-parent_skill: hcls-provider-cdata-clinical-docs
+parent_skill: clinical-docs
 description: "Build an interactive clinical document viewer using Streamlit. Delegates to the developing-with-streamlit platform skill for implementation. Provides domain-specific component requirements, SQL queries, and UX patterns for clinical document browsing."
 tools: ["snowflake_sql_execute"]
 ---

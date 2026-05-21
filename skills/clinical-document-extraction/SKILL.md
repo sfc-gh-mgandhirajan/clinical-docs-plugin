@@ -1,6 +1,6 @@
 ---
 name: clinical-document-extraction
-parent_skill: hcls-provider-cdata-clinical-docs
+parent_skill: clinical-docs
 description: "Orchestrator for the clinical document extraction pipeline. Delegates to gate micro-skills (Tier 1) for pre-condition confirmation and phase skills (Tier 2) for pipeline execution. No inline gates or pipeline SQL — all execution is in sub-skills."
 tools: ["snowflake_sql_execute"]
 ---

@@ -1,6 +1,6 @@
 ---
 name: clinical-docs-search
-parent_skill: hcls-provider-cdata-clinical-docs
+parent_skill: clinical-docs
 description: "Create and query a Cortex Search Service over parsed clinical document content. Enables full-text semantic search across discharge summaries, pathology reports, radiology reports, and other clinical documents."
 tools: ["snowflake_sql_execute"]
 ---

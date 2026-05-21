@@ -1,6 +1,6 @@
 ---
 name: clinical-docs-agent
-parent_skill: hcls-provider-cdata-clinical-docs
+parent_skill: clinical-docs
 description: "Create a Cortex Agent that combines Cortex Analyst (Semantic View) and Cortex Search for natural language querying of clinical documents. Supports structured queries on extracted fields and full-text search on document content."
 tools: ["snowflake_sql_execute"]
 ---
