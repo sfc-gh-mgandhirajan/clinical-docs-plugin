@@ -98,6 +98,12 @@ Clinical Documents (PDF, DOCX, Images)
 
 ## How to Deploy
 
+### Install the Plugin
+
+```bash
+cortex plugin install sfc-gh-mgandhirajan/clinical-docs-plugin
+```
+
 ### Prerequisites
 
 - Snowflake account in a Cortex AI-supported region
@@ -134,6 +140,11 @@ After approval, CoCo provisions everything and writes a deployment manifest. Fut
 /clinical-docs:agent         # Natural language Q&A via Cortex Agent
 /clinical-docs:viewer        # Deploy or open the Streamlit document viewer
 /clinical-docs:status        # Check pipeline health
+```
+
+Or invoke the router skill directly:
+```
+$clinical-docs extract my clinical documents
 ```
 
 ---
